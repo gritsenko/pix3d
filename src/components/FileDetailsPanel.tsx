@@ -2,12 +2,14 @@ import React from 'react';
 import { Button, Typography } from 'antd';
 import type { FileEntry, FileSystemEntry } from '../types';
 import SceneManager from '../../src/Core/SceneManager';
+import * as THREE from 'three';
 
 interface FileDetailsPanelProps {
   file: FileSystemEntry;
+  onSelectObject?: (obj: THREE.Object3D | null) => void;
 }
 
-export const FileDetailsPanel: React.FC<FileDetailsPanelProps> = ({ file }) => {
+export const FileDetailsPanel: React.FC<FileDetailsPanelProps> = ({ file, onSelectObject }) => {
   const isGlb = !file.isDirectory && (file as FileEntry).name.toLowerCase().endsWith('.glb');
   const handleAddToScene = async () => {
     if (!isGlb) return;
@@ -15,6 +17,9 @@ export const FileDetailsPanel: React.FC<FileDetailsPanelProps> = ({ file }) => {
     const fileEntry = file as FileEntry;
     const url = URL.createObjectURL(fileEntry.file);
     await SceneManager.instance.AddModelToScene(fileEntry.name, url);
+    if (onSelectObject) {
+      onSelectObject(SceneManager.instance.selected);
+    }
     // Optionally, revokeObjectURL after some time
     setTimeout(() => URL.revokeObjectURL(url), 10000);
   };

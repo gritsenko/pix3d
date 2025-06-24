@@ -5,6 +5,7 @@ import { SceneTree } from './SceneTree';
 import styles from './SceneEditor.module.css';
 import { EditMode } from './EditMode';
 import SceneManager from '../../../Core/SceneManager';
+import { ObjectInspector } from './ObjectInspector';
 
 const SceneEditor: React.FC = () => {
     const mountRef = useRef<HTMLDivElement>(null);
@@ -14,14 +15,17 @@ const SceneEditor: React.FC = () => {
     const [scene, setScene] = useState(SceneManager.instance.scene);
     const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
     const [sceneReady, setSceneReady] = useState(false);
+    const [, forceUpdate] = useState(0); // for transform updates
 
     useEffect(() => {
         // Subscribe to SceneManager updates
         const unsubScene = SceneManager.instance.subscribeScene(setScene);
         const unsubSel = SceneManager.instance.subscribeSelection(setSelectedObject);
+        const unsubTransform = SceneManager.instance.subscribeTransform(() => forceUpdate(n => n + 1));
         return () => {
             unsubScene();
             unsubSel();
+            unsubTransform();
         };
     }, []);
 
@@ -100,6 +104,9 @@ const SceneEditor: React.FC = () => {
             </div>
             <div className={styles.viewport} ref={mountRef}>
                 <TransformToolbar mode={transformMode} onModeChange={setTransformMode} />
+            </div>
+            <div className={styles.objectInspector}>
+                <ObjectInspector object={selectedObject} editModeRef={editModeRef} />
             </div>
         </div>
     );

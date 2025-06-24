@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
-import GameScene from './GameScene';
+import GameScene from '../../../Core/ObjectTypes/GameScene';
+import SceneManager from '../../../Core/SceneManager';
 
 export class EditMode {
     public camera: THREE.PerspectiveCamera;
@@ -42,6 +43,10 @@ export class EditMode {
 
         this.transformControls.addEventListener('dragging-changed', (event) => {
             this.orbitControls.enabled = !event.value;
+            if (!event.value) {
+                // Dragging ended, notify transform changed for inspector update
+                SceneManager.instance.emitTransform();
+            }
         });
 
         this.transformControls.addEventListener('objectChange', () => {
@@ -145,5 +150,11 @@ export class EditMode {
     public handleResize(width: number, height: number) {
         this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
+    }
+
+    public updateSelectionBox() {
+        if (this.selectionBox && this.transformControls.object) {
+            this.selectionBox.box.setFromObject(this.transformControls.object);
+        }
     }
 }

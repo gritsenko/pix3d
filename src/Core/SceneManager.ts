@@ -17,6 +17,7 @@ export class SceneManager {
     private selectionListeners: SelectionListener[] = [];
     private assetLoader = new AssetLoader();
     private sceneLoader = new SceneLoader(this.assetLoader);
+    private transformListeners: (() => void)[] = [];
 
     private constructor() {}
 
@@ -95,11 +96,23 @@ export class SceneManager {
         };
     }
 
+    subscribeTransform(listener: () => void) {
+        this.transformListeners.push(listener);
+        return () => {
+            this.transformListeners = this.transformListeners.filter(l => l !== listener);
+        };
+    }
+
     private emitScene() {
-        for (const l of this.sceneListeners) l(this._scene);
+        // Emit a shallow clone to ensure React state updates
+        const sceneToEmit = this._scene ? Object.assign(Object.create(Object.getPrototypeOf(this._scene)), this._scene) : null;
+        for (const l of this.sceneListeners) l(sceneToEmit);
     }
     private emitSelection() {
         for (const l of this.selectionListeners) l(this._selected);
+    }
+    emitTransform() {
+        for (const l of this.transformListeners) l();
     }
 
     /**
@@ -130,7 +143,16 @@ export class SceneManager {
         if (this._scene) {
             this._scene.addGameObject(gameObject);
             this.emitScene();
+            this.setSelected(gameObject); // Select the newly added object
         }
+    }
+
+    /**
+     * Notify listeners that the selection has changed, even if the object reference is the same.
+     * Useful for forcing UI updates after transform controls.
+     */
+    notifySelectionChanged() {
+        this.emitSelection();
     }
 }
 
