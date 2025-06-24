@@ -190,8 +190,10 @@ export default class AssetLoader {
 
     loadGltfToGameObject(name: string, modelName: string, transform: Transform): GameObject {
         const gltf = this.getGltfByName(modelName);
+        if (!gltf) {
+            throw new Error(`GLTF model not loaded: ${modelName}`);
+        }
         const instance = SkeletonUtils.clone(gltf.scene);
-
         const animations = gltf.animations as THREE.AnimationClip[];
         const gameObject = new GameObject(instance, transform, animations);
         gameObject.name = name;
@@ -199,4 +201,34 @@ export default class AssetLoader {
         return gameObject;
     }
 
+    async loadModel(key: string): Promise<void> {
+        const modelUrl = assetRegistry.assets.models[key];
+        if (!modelUrl) throw new Error('Model URL not found in registry: ' + key);
+        // If already loaded, skip
+        if (this.gltfs.find(x => x.key === key)) return;
+        let result;
+        if ((modelUrl as string).startsWith('blob:')) {
+            // Handle Blob URL
+            result = await this.loadGltfFromBlobUrl({ key, url: modelUrl as string });
+        } else {
+            result = await this.loadGltfAsync({ key, url: modelUrl as string });
+        }
+        this.gltfs.push(result);
+    }
+
+    private async loadGltfFromBlobUrl(entry: ResourceEntry): Promise<{ key: string, gltf: GLTF }> {
+        const response = await fetch(entry.url);
+        const arrayBuffer = await response.arrayBuffer();
+        return new Promise((resolve, reject) => {
+            this.gltfLoader.parse(
+                arrayBuffer,
+                '',
+                gltf => resolve({ key: entry.key, gltf }),
+                error => {
+                    console.error('Error loading gltf from blob:', error);
+                    reject(error);
+                }
+            );
+        });
+    }
 }

@@ -50,7 +50,7 @@ interface UiLayout {
 // UiLayoutManager.ts
 export class UiLayoutManager {
     private scene: THREE.Scene;
-    private layout: UiLayout;
+    private layout: UiLayout | undefined;
     private elements: Map<string, THREE.Sprite> = new Map();
     private groups: Map<string, THREE.Sprite[]> = new Map();
     private assetLoader: AssetLoader;
@@ -69,6 +69,12 @@ export class UiLayoutManager {
     }
 
     private initializeElements() {
+
+        if (!this.layout) {
+            console.warn("Layout not loaded, cannot initialize elements.");
+            return;
+        }
+
         this.layout.elements.forEach(element => {
 
             const sprite = this.createObjectByElementType(element);
@@ -171,6 +177,11 @@ export class UiLayoutManager {
     }
 
     updateLayout() {
+
+        if (!this.layout) {
+            console.warn("Layout not loaded, cannot update.");
+            return;
+        }
 
         const width = window.innerWidth;
         const height = window.innerHeight;
@@ -358,7 +369,7 @@ export class UiLayoutManager {
         // Apply stored positions and adjust scales if needed
         this.elements.forEach((sprite, name) => {
             const previousState = currentStates.get(name);
-            if (previousState && !this.layout.elements.find(e => e.name === name)?.stretchToScreen) {
+            if (previousState && this.layout && !this.layout.elements.find(e => e.name === name)?.stretchToScreen) {
                 if (sprite instanceof TextSprite) {
                     // For text sprites, we only restore position as scale is handled internally
                     sprite.position.copy(previousState.position);
@@ -375,7 +386,7 @@ export class UiLayoutManager {
         return this.elements.get(name);
     }
     getUiElement(name: string): UiElementLayout | undefined {
-        return this.layout.elements.find(e => e.name === name);
+        return this.layout?.elements.find(e => e.name === name);
     }
 
     getScale = () => this.baseScale;

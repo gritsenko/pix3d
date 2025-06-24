@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Typography, Tree } from 'antd';
 import { FolderOpenOutlined } from '@ant-design/icons';
 import { FileItem } from './FileItem';
+import { FileDetailsPanel } from './FileDetailsPanel';
 import styles from './FileBrowser.module.css';
 import type { FileSystemEntry, DirectoryEntry, FileEntry, FileBrowserProps } from '../types';
 
@@ -264,17 +265,7 @@ export function FileBrowser({ currentPath = '', currentDirectory, onPathChange }
       </div>
       <div className={styles.fileDetails}>
         {selectedFile ? (
-          <div>
-            <Typography.Title level={4} style={{ marginBottom: 16 }}>
-              {selectedFile.name}
-            </Typography.Title>
-            <p><Typography.Text strong>Path:</Typography.Text> {selectedFile.path}</p>
-            <p><Typography.Text strong>Type:</Typography.Text> {selectedFile.isDirectory ? 'Directory' : 'File'}</p>
-            {!selectedFile.isDirectory && (
-              <p><Typography.Text strong>Size:</Typography.Text> {formatFileSize((selectedFile as FileEntry).size)}</p>
-            )}
-            <p><Typography.Text strong>Last modified:</Typography.Text> {formatLastModified(selectedFile)}</p>
-          </div>
+          <FileDetailsPanel file={selectedFile} />
         ) : (
           <div className="no-file-selected">
             <Typography.Text type="secondary">Select a file to view details</Typography.Text>

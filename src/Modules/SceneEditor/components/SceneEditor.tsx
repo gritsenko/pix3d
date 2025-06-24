@@ -4,22 +4,29 @@ import { TransformToolbar } from './TransformToolbar';
 import { SceneTree } from './SceneTree';
 import styles from './SceneEditor.module.css';
 import { EditMode } from './EditMode';
-import GameScene from '../../../Core/ObjectTypes/GameScene';
-import GameObject from '../../../Core/ObjectTypes/GameObject';
-import { Transform } from '../../../Core/Runtime';
+import SceneManager from '../../../Core/SceneManager';
 
 const SceneEditor: React.FC = () => {
     const mountRef = useRef<HTMLDivElement>(null);
     const editModeRef = useRef<EditMode | null>(null);
-    const sceneRef = useRef<GameScene | null>(null);
 
-    const [selectedObject, setSelectedObject] = useState<THREE.Object3D | null>(null);
+    const [selectedObject, setSelectedObject] = useState<THREE.Object3D | null>(SceneManager.instance.selected);
+    const [scene, setScene] = useState(SceneManager.instance.scene);
     const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
     const [sceneReady, setSceneReady] = useState(false);
 
     useEffect(() => {
-        if (!mountRef.current) return;
+        // Subscribe to SceneManager updates
+        const unsubScene = SceneManager.instance.subscribeScene(setScene);
+        const unsubSel = SceneManager.instance.subscribeSelection(setSelectedObject);
+        return () => {
+            unsubScene();
+            unsubSel();
+        };
+    }, []);
 
+    useEffect(() => {
+        if (!mountRef.current) return;
         const currentMount = mountRef.current;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -27,30 +34,16 @@ const SceneEditor: React.FC = () => {
         renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
         currentMount.appendChild(renderer.domElement);
 
-        const scene = new GameScene();
-        scene.init();
-        sceneRef.current = scene;
-
-        // Add default cube
-        const geo = new THREE.BoxGeometry();
-        const mat = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
-        const cubeMesh = new THREE.Mesh(geo, mat);
-        
-        const transform: Transform = {
-            position: new THREE.Vector3(0, 0, 0),
-            rotation: new THREE.Euler(0, 0, 0),
-            scale: new THREE.Vector3(1, 1, 1),
-            quaternion: new THREE.Quaternion()
-        };
-        
-        const mesh = new GameObject(cubeMesh, transform, []);
-        scene.addGameObject(mesh);
+        let scene = SceneManager.instance.scene;
+        if (!scene) {
+            scene = SceneManager.instance.createDefaultScene();
+        }
 
         const editMode = new EditMode(renderer, scene);
         editModeRef.current = editMode;
 
         editMode.onSelect = (obj) => {
-            setSelectedObject(obj);
+            SceneManager.instance.setSelected(obj);
         };
 
         const handleResize = () => {
@@ -91,15 +84,15 @@ const SceneEditor: React.FC = () => {
 
     const handleSelectObject = (obj: THREE.Object3D | null) => {
         editModeRef.current?.selectObject(obj);
-        setSelectedObject(obj);
+        SceneManager.instance.setSelected(obj);
     }
 
     return (
         <div className={styles.sceneEditorContainer}>
             <div className={styles.sceneHierarchy}>
-                {sceneReady && sceneRef.current && (
+                {sceneReady && scene && (
                     <SceneTree
-                        root={sceneRef.current}
+                        root={scene}
                         selected={selectedObject}
                         onSelect={handleSelectObject}
                     />
