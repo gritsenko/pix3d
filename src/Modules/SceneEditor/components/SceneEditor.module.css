@@ -1,0 +1,83 @@
+.sceneEditorContainer {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  height: 66vh;
+  border: 1px solid var(--color-panels-border);
+  background: var(--color-scene-background);
+}
+
+.sceneHierarchy {
+  width: 220px;
+  background: var(--color-panels-background);
+  color: var(--color-foreground);
+  overflow-y: auto;
+  border-right: 1px solid var(--color-panels-border);
+  padding: 8px 0;
+}
+
+.treeView {
+  font-size: 14px;
+  user-select: none;
+}
+
+.treeNode {
+  padding: 2px 8px;
+  cursor: pointer;
+  border-radius: 3px;
+  margin: 2px 0;
+}
+
+.treeNode:hover {
+  background: var(--color-button-hover);
+} 
+
+.selected {
+  background: var(--color-my-accent);
+  color: var(--color-foreground);
+} 
+
+.treeChildren {
+  margin-left: 16px;
+}
+
+.viewport {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background: var(--color-main-background);
+  position: relative;
+}
+
+.toolbarOverlay {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: var(--color-button-background);
+  color: var(--color-foreground);
+  padding: 8px 10px;
+  border-radius: 6px;
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.toolbarButton {
+  background: none;
+  border: none;
+  color: var(--color-foreground);
+  font-size: 22px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+} 
+.toolbarButton:hover {
+  background: var(--color-button-hover);
+} 
+.toolbarButtonActive {
+  background: var(--color-my-accent);
+  color: var(--color-foreground);
+  font-weight: bold;
+} 

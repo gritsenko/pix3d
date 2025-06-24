@@ -1,0 +1,48 @@
+:root {
+  /* Color Variables */
+  --color-foreground: rgba(255, 255, 255, 0.7);
+  --color-scene-background: #1C1C1E;
+  --color-panels-border: #2C2C2E;
+  --color-panels-background: rgba(6, 6, 8, 0.95);
+  --color-main-background: #2d2d2f;
+  --color-main-menu-background: #1C1C1E;
+  --color-modal-overlay: rgba(45, 45, 47, 0.53);
+  --color-title-bar-background: #1d1d1f;
+  --color-selected-item: rgba(255, 255, 255, 0.2);
+  --color-my-accent: rgba(67, 132, 222, 1.0);
+  --color-button-background: rgba(6, 6, 8, 0.8);
+  --color-button-hover: rgba(255, 255, 255, 0.3);
+  --color-button-active: #5883bf;
+  --color-my-link-highlight: rgba(107, 167, 249, 1.0);
+  --color-brush-button: rgba(255, 255, 255, 0.2);
+  --color-brush-item: rgba(255, 255, 255, 0.1);
+  --color-inner-panel-background: #3a3f46;
+
+  /* Brush Variables */
+  --brush-selected-tool: linear-gradient(135deg, #FF6B00 0%, #E5B407 100%);
+  --brush-selected-tool-border: rgba(255, 255, 255, 0.3);
+  --brush-foreground: var(--color-foreground);
+  --brush-panels-background: var(--color-panels-background);
+  --brush-panels-border: var(--color-panels-border);
+  --brush-main-background: var(--color-main-background);
+  --brush-main-menu-background: var(--color-main-menu-background);
+  --brush-selected-item: var(--color-selected-item);
+  --brush-accent: var(--brush-selected-tool);
+  --brush-button-background: var(--color-button-background);
+  --brush-button-hover: var(--color-button-hover);
+  --brush-button-active: var(--color-button-active);
+  --brush-button-solid: var(--color-main-background);
+  --brush-link-highlight: var(--color-my-link-highlight);
+  --brush-actions-bar-background: #444E59;
+  --brush-modal-overlay: var(--color-modal-overlay);
+  --brush-selected-toggle-button: var(--color-brush-button);
+  --brush-brush-button: var(--color-brush-button);
+  --brush-brush-item: var(--color-brush-item);
+  --brush-inner-panel-background: var(--color-inner-panel-background);
+}
+
+/* General body and app backgrounds for immediate effect */
+body {
+  color: var(--color-foreground);
+  background: var(--color-main-background);
+}
