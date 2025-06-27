@@ -2,16 +2,16 @@ import * as THREE from 'three';
 import { Behavior } from '../Behaviors/Behavior';
 import { Transform } from '../Runtime';
 import { GameObjectCollider } from './GameObjectCollider';
+import Node3d from './Node3d';
 
-export default class GameObject extends THREE.Object3D {
+export default class GameObject extends Node3d {
+    
     animationAction: THREE.AnimationAction | undefined;
     mixer: THREE.AnimationMixer | undefined;
     model: THREE.Object3D;
     collider: GameObjectCollider | undefined;
     animations: THREE.AnimationClip[] = [];
     currentAnimationName: string | undefined;
-    behaviors: Behavior[] = [];
-    isActive: boolean = true;
     modelName: string | undefined;
     private onAnimationComplete: (() => void) | undefined;
 
@@ -24,13 +24,6 @@ export default class GameObject extends THREE.Object3D {
         this.setTransform(transform);
         this.add(this.model);
         // console.log(this);
-    }
-
-    setTransform(transform: Transform) {
-        this.position.copy(transform.position);
-        this.rotation.copy(transform.rotation);
-        this.scale.copy(transform.scale);
-        //this.quaternion.copy(transform.quaternion);
     }
 
     update(dt: number) {
@@ -108,7 +101,6 @@ export default class GameObject extends THREE.Object3D {
     }
     setBehaviors(behaviors: Behavior[]) {
         this.behaviors = behaviors;
-
         behaviors.forEach(b => b.object3d = this);
     }
 

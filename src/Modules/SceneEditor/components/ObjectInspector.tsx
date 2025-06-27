@@ -25,6 +25,9 @@ export const ObjectInspector: React.FC<ObjectInspectorProps> = ({ object, editMo
     const [mixer, setMixer] = useState<THREE.AnimationMixer | null>(null);
     const [actions, setActions] = useState<{ [name: string]: THREE.AnimationAction }>({});
 
+    // Name state
+    const [objectName, setObjectName] = useState<string>(object?.name || '');
+
     // Sync local state with object when object or its transform changes
     useEffect(() => {
         if (object) {
@@ -46,8 +49,18 @@ export const ObjectInspector: React.FC<ObjectInspectorProps> = ({ object, editMo
                     z: fmt(object.scale.z),
                 },
             });
+            setObjectName(object.name || '');
         }
     }, [object, object?.position.x, object?.position.y, object?.position.z, object?.rotation.x, object?.rotation.y, object?.rotation.z, object?.scale.x, object?.scale.y, object?.scale.z]);
+    // Handle name change
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setObjectName(e.target.value);
+        if (object) {
+            object.name = e.target.value;
+            // Notify selection changed so SceneTree updates
+            SceneManager.instance.notifySelectionChanged();
+        }
+    };
 
     // Setup mixer and actions when object changes
     useEffect(() => {
@@ -185,14 +198,21 @@ export const ObjectInspector: React.FC<ObjectInspectorProps> = ({ object, editMo
         return <div style={{ padding: 12, fontSize: 13 }}>No object selected.</div>;
     }
 
-    const { name, type } = object;
+    const { type } = object;
 
     return (
         <div style={{ padding: 12, fontSize: 13, color: '#eee', fontFamily: 'Inter, sans-serif' }}>
             <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 2 }}>Object Inspector</div>
             {type && <div style={{ fontSize: 12, color: '#aaa', marginBottom: 8 }}>{type}</div>}
-            <div style={{ marginBottom: 8 }}>
-                <span style={labelStyle}>Name:</span> {name || '(unnamed)'}
+            <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center' }}>
+                <span style={labelStyle}>Name:</span>
+                <input
+                    type="text"
+                    value={objectName}
+                    style={{ ...inputStyle, width: 160 }}
+                    onChange={handleNameChange}
+                    placeholder="(unnamed)"
+                />
             </div>
             <div style={sectionTitle}>Transform</div>
             <div style={{ marginBottom: 6, display: 'flex', alignItems: 'center' }}>
