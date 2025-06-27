@@ -19,6 +19,12 @@ export const ObjectInspector: React.FC<ObjectInspectorProps> = ({ object, editMo
         scale: { x: '', y: '', z: '' },
     });
 
+    // Animation state
+    const [selectedAnim, setSelectedAnim] = useState<string>('');
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [mixer, setMixer] = useState<THREE.AnimationMixer | null>(null);
+    const [actions, setActions] = useState<{ [name: string]: THREE.AnimationAction }>({});
+
     // Sync local state with object when object or its transform changes
     useEffect(() => {
         if (object) {
@@ -43,11 +49,38 @@ export const ObjectInspector: React.FC<ObjectInspectorProps> = ({ object, editMo
         }
     }, [object, object?.position.x, object?.position.y, object?.position.z, object?.rotation.x, object?.rotation.y, object?.rotation.z, object?.scale.x, object?.scale.y, object?.scale.z]);
 
-    if (!object) {
-        return <div style={{ padding: 12, fontSize: 13 }}>No object selected.</div>;
-    }
+    // Setup mixer and actions when object changes
+    useEffect(() => {
+        if (object && (object as any).animations && (object as any).animations.length > 0) {
+            const newMixer = new THREE.AnimationMixer(object);
+            const anims = (object as any).animations as THREE.AnimationClip[];
+            const acts: { [name: string]: THREE.AnimationAction } = {};
+            anims.forEach(clip => {
+                acts[clip.name] = newMixer.clipAction(clip);
+            });
+            setMixer(newMixer);
+            setActions(acts);
+            setSelectedAnim(anims[0].name);
+        } else {
+            setMixer(null);
+            setActions({});
+            setSelectedAnim('');
+        }
+        setIsPlaying(false);
+    }, [object]);
 
-    const { name, type } = object;
+    // Animation update loop (advance mixer)
+    useEffect(() => {
+        let frame: number;
+        if (mixer && isPlaying) {
+            const animate = () => {
+                mixer.update(1 / 60);
+                frame = requestAnimationFrame(animate);
+            };
+            frame = requestAnimationFrame(animate);
+            return () => cancelAnimationFrame(frame);
+        }
+    }, [mixer, isPlaying]);
 
     const handleInputChange = (field: TransformField, axis: Axis, value: string) => {
         setFields(prev => ({
@@ -56,7 +89,7 @@ export const ObjectInspector: React.FC<ObjectInspectorProps> = ({ object, editMo
         }));
         // Only update object if value is a valid number
         const num = parseFloat(value);
-        if (!isNaN(num)) {
+        if (!isNaN(num) && object) {
             if (field === 'position') object.position[axis] = num;
             if (field === 'scale') object.scale[axis] = num;
             if (field === 'rotation') object.rotation[axis] = THREE.MathUtils.degToRad(num);
@@ -71,9 +104,11 @@ export const ObjectInspector: React.FC<ObjectInspectorProps> = ({ object, editMo
         let num = parseFloat(value);
         if (isNaN(num)) num = 0;
         // Update object and local state
-        if (field === 'position') object.position[axis] = num;
-        if (field === 'scale') object.scale[axis] = num;
-        if (field === 'rotation') object.rotation[axis] = THREE.MathUtils.degToRad(num);
+        if (object) {
+            if (field === 'position') object.position[axis] = num;
+            if (field === 'scale') object.scale[axis] = num;
+            if (field === 'rotation') object.rotation[axis] = THREE.MathUtils.degToRad(num);
+        }
         const fmt = (n: number) => parseFloat(n.toFixed(4)).toString();
         setFields(prev => ({
             ...prev,
@@ -83,6 +118,52 @@ export const ObjectInspector: React.FC<ObjectInspectorProps> = ({ object, editMo
         if (editModeRef && editModeRef.current) {
             editModeRef.current.updateSelectionBox();
         }
+    };
+
+    // Play selected animation
+    const handlePlay = () => {
+        if (mixer && selectedAnim && actions[selectedAnim]) {
+            Object.values(actions).forEach(a => { a.stop(); });
+            actions[selectedAnim].reset().play();
+            setIsPlaying(true);
+        }
+    };
+    // Pause animation
+    const handlePause = () => {
+        if (mixer && selectedAnim && actions[selectedAnim]) {
+            actions[selectedAnim].paused = true;
+            setIsPlaying(false);
+        }
+    };
+    // Reset animation
+    const handleReset = () => {
+        if (mixer && selectedAnim && actions[selectedAnim]) {
+            actions[selectedAnim].reset();
+            actions[selectedAnim].time = 0;
+            actions[selectedAnim].stop();
+            setIsPlaying(false);
+        }
+    };
+    // Resume animation
+    const handleResume = () => {
+        if (mixer && selectedAnim && actions[selectedAnim]) {
+            actions[selectedAnim].paused = false;
+            setIsPlaying(true);
+        }
+    };
+    // Animation dropdown change
+    const handleAnimChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const animName = e.target.value;
+        setSelectedAnim(animName);
+        // Immediately show the first frame of the selected animation
+        if (actions[animName] && mixer) {
+            actions[animName].reset();
+            actions[animName].time = 0;
+            actions[animName].play();
+            actions[animName].paused = true;
+            mixer.update(0); // force update pose
+        }
+        setIsPlaying(false);
     };
 
     const inputStyle = {
@@ -99,6 +180,12 @@ export const ObjectInspector: React.FC<ObjectInspectorProps> = ({ object, editMo
 
     const labelStyle = { fontSize: 12, color: '#aaa', marginRight: 12, display: 'inline-block', minWidth: 70 };
     const sectionTitle = { fontSize: 13, fontWeight: 600, margin: '10px 0 4px 0' };
+
+    if (!object) {
+        return <div style={{ padding: 12, fontSize: 13 }}>No object selected.</div>;
+    }
+
+    const { name, type } = object;
 
     return (
         <div style={{ padding: 12, fontSize: 13, color: '#eee', fontFamily: 'Inter, sans-serif' }}>
@@ -150,6 +237,24 @@ export const ObjectInspector: React.FC<ObjectInspectorProps> = ({ object, editMo
                     />
                 ))}
             </div>
+            {/* Animation Controls */}
+            {(object as any).animations && (object as any).animations.length > 0 && (
+                <div style={{ margin: '12px 0' }}>
+                    <div style={sectionTitle}>Animation</div>
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
+                        <span style={labelStyle}>Clip:</span>
+                        <select value={selectedAnim} onChange={handleAnimChange} style={{ ...inputStyle, width: 120 }}>
+                            {((object as any).animations as THREE.AnimationClip[]).map(clip => (
+                                <option key={clip.name} value={clip.name}>{clip.name}</option>
+                            ))}
+                        </select>
+                        <button style={{ ...inputStyle, width: 50, marginLeft: 8 }} onClick={isPlaying ? handlePause : handlePlay}>
+                            {isPlaying ? 'Pause' : 'Play'}
+                        </button>
+                        <button style={{ ...inputStyle, width: 50, marginLeft: 4 }} onClick={handleReset}>Reset</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
