@@ -1,7 +1,8 @@
 import React from 'react';
 import { Button, Typography } from 'antd';
 import type { FileEntry, FileSystemEntry } from '../types';
-import SceneManager from '../../src/Core/SceneManager';
+import { useEngineService } from '../contexts/ServiceProvider';
+import { useSceneManager } from '../hooks/useSceneManager';
 import * as THREE from 'three';
 
 interface FileDetailsPanelProps {
@@ -10,18 +11,32 @@ interface FileDetailsPanelProps {
 }
 
 export const FileDetailsPanel: React.FC<FileDetailsPanelProps> = ({ file, onSelectObject }) => {
+  const engineService = useEngineService();
+  const { addModelToScene } = useSceneManager(engineService);
+  
   const isGlb = !file.isDirectory && (file as FileEntry).name.toLowerCase().endsWith('.glb');
+  
   const handleAddToScene = async () => {
     if (!isGlb) return;
-    // Use file.path as key, and create a blob URL for the file
-    const fileEntry = file as FileEntry;
-    const url = URL.createObjectURL(fileEntry.file);
-    await SceneManager.instance.AddModelToScene(fileEntry.name, url);
-    if (onSelectObject) {
-      onSelectObject(SceneManager.instance.selected);
+    
+    try {
+      const fileEntry = file as FileEntry;
+      const url = URL.createObjectURL(fileEntry.file);
+      
+      // Use the new architecture instead of directly accessing SceneManager
+      await addModelToScene(fileEntry.name, url);
+      
+      // Get the selected object through the service
+      const selectedObject = engineService.getSelectedObject();
+      if (onSelectObject) {
+        onSelectObject(selectedObject);
+      }
+      
+      // Clean up the blob URL
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (error) {
+      console.error('Failed to add model to scene:', error);
     }
-    // Optionally, revokeObjectURL after some time
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
   };
 
   return (

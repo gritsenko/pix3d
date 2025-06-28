@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "lint:fix": "eslint . --fix",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
@@ -22,11 +26,12 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "three": "^0.177.0",
-    "vite-plugin-pwa": "^1.0.0"
+    "vite-plugin-pwa": "^1.0.0",
+    "zustand": "^5.0.6"
   },
   "devDependencies": {
-    "@types/howler": "^2.2.12",
     "@eslint/js": "^9.25.0",
+    "@types/howler": "^2.2.12",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@types/wicg-file-system-access": "^2023.10.6",
