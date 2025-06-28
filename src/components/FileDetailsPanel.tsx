@@ -23,8 +23,9 @@ export const FileDetailsPanel: React.FC<FileDetailsPanelProps> = ({ file, onSele
       const fileEntry = file as FileEntry;
       const url = URL.createObjectURL(fileEntry.file);
       
-      // Use the new architecture instead of directly accessing SceneManager
-      await addModelToScene(fileEntry.name, url);
+      // Use the original filename as key for consistency
+      const key = fileEntry.name;
+      await addModelToScene(key, url);
       
       // Get the selected object through the service
       const selectedObject = engineService.getSelectedObject();

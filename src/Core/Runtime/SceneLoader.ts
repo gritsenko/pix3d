@@ -19,11 +19,28 @@ export default class SceneLoader {
 
         const scene = new GameScene();
         const gameObjects: GameObject[] = [];
-        levelJson.forEach(item => {
+        interface LevelItem {
+            name: string;
+            modelName: string;
+            position: { x: number; y: number; z: number };
+            rotation: { x: number; y: number; z: number };
+            scale: { x: number; y: number; z: number };
+            quaternion?: { x: number; y: number; z: number; w: number };
+            behaviors?: BehaviorConfig[];
+            noCollider?: boolean;
+            animation?: string;
+        }
+
+        interface BehaviorConfig {
+            type: string;
+            [key: string]: any;
+        }
+
+        (levelJson as LevelItem[]).forEach((item: LevelItem) => {
 
             if (item.modelName.endsWith('glb')) {
-                const gameObject = this.loadGameObject(item);
-                gameObjects.push(gameObject);
+            const gameObject = this.loadGameObject(item);
+            gameObjects.push(gameObject);
             }
         });
 
@@ -45,7 +62,7 @@ export default class SceneLoader {
         const gameObject = this.assetLoader.loadGltfToGameObject(item.name, item.modelName, transform);
         const behaviors: Behavior[] = [];
 
-        item.behaviors?.forEach(behaviorItem => {
+        item.behaviors?.forEach((behaviorItem: any) => {
             const behavior = this.loadBehaviors(behaviorItem);
             if (behavior) {
                 behaviors.push(behavior);

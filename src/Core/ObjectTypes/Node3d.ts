@@ -6,6 +6,10 @@ export default class Node3d extends THREE.Object3D {
     behaviors: Behavior[] = [];
     isActive: boolean = true;
 
+    constructor() {
+        super();
+    }
+
     setTransform(transform: Transform) {
         this.position.copy(transform.position);
         this.rotation.copy(transform.rotation);

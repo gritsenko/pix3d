@@ -25,6 +25,9 @@ export const ObjectInspector: React.FC<ObjectInspectorProps> = ({ object, editMo
     const [mixer, setMixer] = useState<THREE.AnimationMixer | null>(null);
     const [actions, setActions] = useState<{ [name: string]: THREE.AnimationAction }>({});
 
+    // Local visible state to force re-render
+    const [visible, setVisible] = useState<boolean>(object?.visible ?? true);
+
     // Name state
     const [objectName, setObjectName] = useState<string>(object?.name || '');
 
@@ -50,8 +53,9 @@ export const ObjectInspector: React.FC<ObjectInspectorProps> = ({ object, editMo
                 },
             });
             setObjectName(object.name || '');
+            setVisible(object.visible);
         }
-    }, [object, object?.position.x, object?.position.y, object?.position.z, object?.rotation.x, object?.rotation.y, object?.rotation.z, object?.scale.x, object?.scale.y, object?.scale.z]);
+    }, [object, object?.position.x, object?.position.y, object?.position.z, object?.rotation.x, object?.rotation.y, object?.rotation.z, object?.scale.x, object?.scale.y, object?.scale.z, object?.visible]);
     // Handle name change
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setObjectName(e.target.value);
@@ -179,6 +183,16 @@ export const ObjectInspector: React.FC<ObjectInspectorProps> = ({ object, editMo
         setIsPlaying(false);
     };
 
+    // Handle visibility toggle
+    const handleVisibilityToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const checked = e.target.checked;
+        setVisible(checked);
+        if (object) {
+            object.visible = checked;
+            SceneManager.instance.notifySelectionChanged();
+        }
+    };
+
     const inputStyle = {
         width: 62,
         fontSize: 13,
@@ -256,6 +270,14 @@ export const ObjectInspector: React.FC<ObjectInspectorProps> = ({ object, editMo
                         onBlur={e => handleInputBlur('scale', axis, e.target.value)}
                     />
                 ))}
+            </div>
+            <div style={{ marginBottom: 6, display: 'flex', alignItems: 'center' }}>
+                <span style={labelStyle}>Visible:</span>
+                <input
+                    type="checkbox"
+                    checked={visible}
+                    onChange={handleVisibilityToggle}
+                />
             </div>
             {/* Animation Controls */}
             {(object as any).animations && (object as any).animations.length > 0 && (

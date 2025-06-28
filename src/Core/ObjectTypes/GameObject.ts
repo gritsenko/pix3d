@@ -18,12 +18,21 @@ export default class GameObject extends Node3d {
     constructor(model: THREE.Object3D, transform: Transform, Animations: THREE.AnimationClip[]) {
         super();
         this.model = model;
+
+        this.add(this.model);
+        // Ensure all meshes are visible and scale is 1
+        this.traverse(obj => {
+            if ((obj as THREE.Mesh).isMesh) {
+                obj.visible = true;
+            }
+        });
+        this.scale.set(1, 1, 1);
+
         this.mixer = new THREE.AnimationMixer(model);
         this.animations = Animations;
 
         this.setTransform(transform);
-        this.add(this.model);
-        // console.log(this);
+        console.log(this);
     }
 
     update(dt: number) {

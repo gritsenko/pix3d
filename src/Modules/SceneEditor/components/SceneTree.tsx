@@ -1,50 +1,11 @@
 import React, { useMemo, useEffect, useState } from 'react';
-import { Popover, Switch } from 'antd';
+import { Popover, Switch, Tree } from 'antd';
 import { SettingOutlined, SaveOutlined } from '@ant-design/icons';
-// Helper to serialize a THREE.Object3D node to the desired format
-function serializeObject3D(node: THREE.Object3D): any {
-  // Helper to get vector3 as object
-  const vec3 = (v: THREE.Vector3) => ({ x: v.x, y: v.y, z: v.z });
-  // Helper to get Euler as object
-  const euler = (e: THREE.Euler) => ({ x: e.x, y: e.y, z: e.z });
-  // Get custom properties if present
-  const anyNode = node as any;
-  const obj: any = {
-    name: node.name || node.type,
-    modelName: anyNode.modelName || '',
-    type: node.type,
-    noCollider: !!anyNode.noCollider,
-    animation: anyNode.animation || 'Idle',
-    position: vec3(node.position),
-    rotation: euler(node.rotation),
-    scale: vec3(node.scale),
-  };
-  // Behaviors (if present)
-  if (Array.isArray(anyNode.behaviors) && anyNode.behaviors.length > 0) {
-    obj.behaviors = anyNode.behaviors.map((b: any) => {
-      const beh: any = { ...b };
-      // If checkpoints, ensure correct format
-      if (Array.isArray(beh.checkpoints)) {
-        beh.checkpoints = beh.checkpoints.map((cp: any) => ({
-          position: cp.position ? vec3(cp.position) : undefined,
-          rotation: cp.rotation ? euler(cp.rotation) : undefined,
-        }));
-      }
-      return beh;
-    });
-  }
-  return obj;
-}
-
-// Recursively collect all direct children of the root (not root itself)
-function collectSceneObjects(root: THREE.Object3D): any[] {
-  return root.children.map(child => serializeObject3D(child));
-}
-import SceneManager from '../../../Core/SceneManager';
-import { Tree } from 'antd';
+import { saveSceneToFile } from '../../../Core/SceneSaver';
 import * as THREE from 'three';
 import Node3d from '../../../Core/ObjectTypes/Node3d';
 import type { DataNode } from 'antd/es/tree';
+import SceneManager from '../../../Core/SceneManager';
 
 interface SceneTreeProps {
   root: THREE.Object3D;
@@ -142,42 +103,7 @@ export const SceneTree: React.FC<SceneTreeProps> = ({ root, selected, onSelect }
 
   // Save handler
   const handleSave = async () => {
-    try {
-      // Use File System Access API if available
-      // @ts-ignore
-      if (window.showSaveFilePicker) {
-        // @ts-ignore
-        const handle = await window.showSaveFilePicker({
-          suggestedName: 'scene.json',
-          types: [
-            {
-              description: 'JSON file',
-              accept: { 'application/json': ['.json'] },
-            },
-          ],
-        });
-        const writable = await handle.createWritable();
-        const data = JSON.stringify(collectSceneObjects(root), null, 2);
-        await writable.write(data);
-        await writable.close();
-      } else {
-        // Fallback: download as blob
-        const data = JSON.stringify(collectSceneObjects(root), null, 2);
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'scene.json';
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }, 100);
-      }
-    } catch (e) {
-      alert('Failed to save scene: ' + (e instanceof Error ? e.message : e));
-    }
+    await saveSceneToFile(root);
   };
 
   return (
@@ -214,8 +140,8 @@ export const SceneTree: React.FC<SceneTreeProps> = ({ root, selected, onSelect }
         selectedKeys={selected ? [selected.uuid] : []}
         onSelect={handleSelect}
         defaultExpandAll
-        height={400}
         showLine
+        style={{ height: '100%' }}
       />
     </div>
   );
