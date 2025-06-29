@@ -17,7 +17,11 @@ function buildTreeData(node: THREE.Object3D, showAll: boolean, isRoot = false): 
   // Always show root node
   if (isRoot) {
     return {
-      title: formatTitle(node),
+      title: (
+        <span style={{ opacity: node.visible ? 1 : 0.8 }}>
+          {formatTitle(node)}
+        </span>
+      ),
       key: node.uuid,
       children: node.children
         .map(child => buildTreeData(child, showAll, false))
@@ -36,7 +40,11 @@ function buildTreeData(node: THREE.Object3D, showAll: boolean, isRoot = false): 
     return null;
   }
   return {
-    title: formatTitle(node),
+    title: (
+      <span style={{ opacity: node.visible ? 1 : 0.7 }}>
+        {formatTitle(node)}
+      </span>
+    ),
     key: node.uuid,
     children: node.children
       .map(child => buildTreeData(child, showAll, false))

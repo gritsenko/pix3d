@@ -2,7 +2,8 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Layout } from 'antd';
 import ResizableDivider from './ResizableDivider';
 import * as THREE from 'three';
-import { TransformToolbar } from './TransformToolbar';
+// import { TransformToolbar } from './TransformToolbar';
+import Viewport from './Viewport';
 import { SceneTree } from './SceneTree';
 import styles from './SceneEditor.module.css';
 import { EditMode } from './EditMode';
@@ -10,7 +11,7 @@ import SceneManager from '../../../Core/SceneManager';
 import { ObjectInspector } from './ObjectInspector';
 
 const SceneEditor: React.FC = () => {
-    const mountRef = useRef<HTMLDivElement>(null);
+    // const mountRef = useRef<HTMLDivElement>(null);
     const editModeRef = useRef<EditMode | null>(null);
 
     const [selectedObject, setSelectedObject] = useState<THREE.Object3D | null>(SceneManager.instance.selected);
@@ -31,62 +32,9 @@ const SceneEditor: React.FC = () => {
         };
     }, []);
 
-    useEffect(() => {
-        if (!mountRef.current) return;
-        const currentMount = mountRef.current;
+    // ...existing code...
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
-        currentMount.appendChild(renderer.domElement);
-
-        let scene = SceneManager.instance.scene;
-        if (!scene) {
-            scene = SceneManager.instance.createDefaultScene();
-        }
-
-        const editMode = new EditMode(renderer, scene);
-        editModeRef.current = editMode;
-
-        editMode.onSelect = (obj) => {
-            SceneManager.instance.setSelected(obj);
-        };
-
-        const handleResize = () => {
-            const width = currentMount.clientWidth;
-            const height = currentMount.clientHeight;
-            renderer.setSize(width, height);
-            editMode.handleResize(width, height);
-        };
-
-        const resizeObserver = new ResizeObserver(handleResize);
-        resizeObserver.observe(currentMount);
-
-        const clock = new THREE.Clock();
-        let animationFrameId: number;
-        const animate = () => {
-            animationFrameId = requestAnimationFrame(animate);
-            const dt = clock.getDelta();
-            editMode.update();
-            scene.onTick(dt);
-            renderer.render(scene, editMode.camera);
-        };
-
-        animate();
-        setSceneReady(true);
-
-        return () => {
-            cancelAnimationFrame(animationFrameId);
-            resizeObserver.unobserve(currentMount);
-            currentMount.removeChild(renderer.domElement);
-            editMode.dispose();
-            renderer.dispose();
-        };
-    }, []);
-
-    useEffect(() => {
-        editModeRef.current?.setTransformMode(transformMode);
-    }, [transformMode]);
+    // ...existing code...
 
     const handleSelectObject = (obj: THREE.Object3D | null) => {
         editModeRef.current?.selectObject(obj);
@@ -121,9 +69,13 @@ const SceneEditor: React.FC = () => {
             </div>
             <ResizableDivider onDrag={handleLeftResize} />
             <div style={{ flex: 1, minWidth: 0, background: 'none', display: 'flex', flexDirection: 'row', position: 'relative' }}>
-                <div className={styles.viewport} ref={mountRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
-                    <TransformToolbar mode={transformMode} onModeChange={setTransformMode} />
-                </div>
+                <Viewport
+                    transformMode={transformMode}
+                    setTransformMode={setTransformMode}
+                    editModeRef={editModeRef}
+                    setSceneReady={setSceneReady}
+                    onSceneChange={setScene}
+                />
             </div>
             <ResizableDivider onDrag={handleRightResize} />
             <div
