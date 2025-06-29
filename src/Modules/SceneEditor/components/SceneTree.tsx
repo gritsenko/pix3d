@@ -1,9 +1,10 @@
 import React, { useMemo, useEffect, useState } from 'react';
-import { Popover, Switch, Tree } from 'antd';
-import { SettingOutlined, SaveOutlined } from '@ant-design/icons';
+import { Popover, Switch, Tree, Dropdown } from 'antd';
+import { SettingOutlined, SaveOutlined, PlusOutlined } from '@ant-design/icons';
 import { saveSceneToFile } from '../../../Core/SceneSaver';
 import * as THREE from 'three';
 import Node3d from '../../../Core/ObjectTypes/Node3d';
+import CameraObject from '../../../Core/ObjectTypes/CameraObject';
 import type { DataNode } from 'antd/es/tree';
 import SceneManager from '../../../Core/SceneManager';
 
@@ -126,10 +127,31 @@ export const SceneTree: React.FC<SceneTreeProps> = ({ root, selected, onSelect }
     await saveSceneToFile(root);
   };
 
+  // Handler to add new object to the scene
+  const handleAddObject = ({ key }: { key: string }) => {
+    if (key === 'camera') {
+      const cam = new CameraObject();
+      cam.addHelperToScene(root as THREE.Scene);
+      cam.name = 'New Camera';
+      root.add(cam);
+      setVersion(v => v + 1); // Force update
+    }
+    // Add more object types here as needed
+  };
+
+
+  const createMenu = {
+    items: [
+      { key: 'camera', label: 'Camera' },
+      // Add more items here
+    ],
+    onClick: handleAddObject,
+  };
+
   return (
     <div style={{ position: 'relative', background: '#181818', borderRadius: 6, padding: 8, paddingTop: 32, width: '100%' }}>
-      {/* Save button */}
-      <div style={{ position: 'absolute', top: 6, left: 8, zIndex: 2 }}>
+      {/* Save and Create buttons */}
+      <div style={{ position: 'absolute', top: 6, left: 8, zIndex: 2, display: 'flex', gap: 8 }}>
         <button
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           aria-label="Save Scene"
@@ -138,6 +160,15 @@ export const SceneTree: React.FC<SceneTreeProps> = ({ root, selected, onSelect }
         >
           <SaveOutlined style={{ fontSize: 18, color: '#4caf50' }} />
         </button>
+        <Dropdown menu={createMenu} trigger={['click']} placement="bottomLeft">
+          <button
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            aria-label="Create Object"
+            title="Create new object"
+          >
+            <PlusOutlined style={{ fontSize: 18, color: '#2196f3' }} /> Create
+          </button>
+        </Dropdown>
       </div>
       {/* Gear icon button */}
       <div style={{ position: 'absolute', top: 6, right: 8, zIndex: 2 }}>

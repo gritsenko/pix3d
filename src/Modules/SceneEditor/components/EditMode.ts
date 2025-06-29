@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import GameScene from '../../../Core/ObjectTypes/GameScene';
 import SceneManager from '../../../Core/SceneManager';
+import CameraObject from '../../../Core/ObjectTypes/CameraObject';
 
 export class EditMode {
     public camera: THREE.PerspectiveCamera;
@@ -14,6 +15,7 @@ export class EditMode {
     private raycaster = new THREE.Raycaster();
     private selectionBox: THREE.Box3Helper | null = null;
     private gizmo: THREE.Object3D | null = null;
+    private cameraHelper: THREE.CameraHelper | null = null;
 
     private _selectedObject: THREE.Object3D | null = null;
 
@@ -33,6 +35,7 @@ export class EditMode {
         this.scene = scene;
 
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.camera.name = 'Edit mode camera';
         this.camera.position.set(10, 10, 10);
 
         this.orbitControls = new OrbitControls(this.camera, renderer.domElement);
@@ -96,6 +99,7 @@ export class EditMode {
     public selectObject(object: THREE.Object3D | null) {
         if (object === this._selectedObject) return;
 
+
         // Detach from previous object and remove old helpers
         this.transformControls.detach();
         if (this.selectionBox) {
@@ -106,6 +110,10 @@ export class EditMode {
         if (this.gizmo) {
             this.scene.remove(this.gizmo);
             this.gizmo = null;
+        }
+        if (this.cameraHelper) {
+            this.scene.remove(this.cameraHelper);
+            this.cameraHelper = null;
         }
 
         this.setSelectedObject(object);
@@ -126,6 +134,23 @@ export class EditMode {
             this.selectionBox = new THREE.Box3Helper(box, 0x00ff00);
             this.selectionBox.userData.isGizmo = true;
             this.scene.add(this.selectionBox);
+
+            // Camera helper logic
+            // let cameraObj: THREE.PerspectiveCamera | null = null;
+            // if (object instanceof CameraObject) {
+            //     cameraObj = object.camera;
+            // } else {
+            //     // Check for direct child of type CameraObject
+            //     const camChild = object.children.find(child => child instanceof CameraObject) as CameraObject | undefined;
+            //     if (camChild) {
+            //         cameraObj = camChild.camera;
+            //     }
+            // }
+            // if (cameraObj) {
+            //     this.cameraHelper = new THREE.CameraHelper(cameraObj);
+            //     this.cameraHelper.userData.isGizmo = true;
+            //     this.scene.add(this.cameraHelper);
+            // }
         }
     }
 

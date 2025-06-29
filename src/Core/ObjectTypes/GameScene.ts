@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import GameObject from './GameObject';
+import Node3d from './Node3d';
 import { Behavior } from '../Behaviors/Behavior';
 
 export interface IGameScene {
@@ -7,7 +7,7 @@ export interface IGameScene {
 }
 
 export default class GameScene extends THREE.Scene implements IGameScene {
-    private gameObjects: GameObject[] = [];
+    private nodes: Node3d[] = [];
 
     constructor() {
         super();
@@ -48,27 +48,27 @@ export default class GameScene extends THREE.Scene implements IGameScene {
 
         return [hemiLight];
     }
-    setGameObjects(gameObjects: GameObject[]) {
-        this.gameObjects = gameObjects;
+    setGameObjects(nodes: Node3d[]) {
+        this.nodes = nodes;
 
-        gameObjects.forEach(x => {
+        nodes.forEach(x => {
             if (x) this.add(x);
         });
     }
 
-    addGameObject(gameObject: GameObject) {
-        if (gameObject) {
-            this.gameObjects.push(gameObject);
-            this.add(gameObject);
+    addGameObject(node: Node3d) {
+        if (node) {
+            this.nodes.push(node);
+            this.add(node);
         }
     }
 
     getGameObjects() {
-        return this.gameObjects;
+        return this.nodes;
     }
 
-    findbjectByName(name: string): GameObject {
-        const result = this.gameObjects.find(x => x.name == name);
+    findbjectByName(name: string): Node3d {
+        const result = this.nodes.find(x => x.name == name);
         if (result)
             return result;
         else
@@ -77,11 +77,16 @@ export default class GameScene extends THREE.Scene implements IGameScene {
 
     onTick(dt: number) {
         this.children.forEach(x => {
-            if (x instanceof GameObject && x.isActive) {
+            if (x instanceof Node3d && x.isActive) {
                 x.update(dt);
             }
 
             Behavior.ObjectBehaviorsOnTick(x, dt);
         });
+    }
+
+    removeGameObject(node: Node3d) {
+        this.remove(node);
+        this.nodes = this.nodes.filter(obj => obj !== node);
     }
 }

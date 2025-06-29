@@ -25,12 +25,25 @@ const SceneEditor: React.FC = () => {
         const unsubScene = SceneManager.instance.subscribeScene(setScene);
         const unsubSel = SceneManager.instance.subscribeSelection(setSelectedObject);
         const unsubTransform = SceneManager.instance.subscribeTransform(() => forceUpdate(n => n + 1));
+
+        // Key handler for Delete key
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Delete' && selectedObject) {
+                e.preventDefault();
+                if (window.confirm('Are you sure you want to delete the selected object?')) {
+                    SceneManager.instance.deleteObject(selectedObject);
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+
         return () => {
             unsubScene();
             unsubSel();
             unsubTransform();
+            window.removeEventListener('keydown', handleKeyDown);
         };
-    }, []);
+    }, [selectedObject]);
 
     // ...existing code...
 

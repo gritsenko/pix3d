@@ -16,4 +16,7 @@ export default class Node3d extends THREE.Object3D {
         this.scale.copy(transform.scale);
         //this.quaternion.copy(transform.quaternion);
     }
+
+    update(dt: number) {
+    }
 }

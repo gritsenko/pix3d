@@ -5,6 +5,7 @@ import { GameObjectCollider } from './GameObjectCollider';
 import Node3d from './Node3d';
 
 export default class GameObject extends Node3d {
+    public type: string = "GameObject";
     
     animationAction: THREE.AnimationAction | undefined;
     mixer: THREE.AnimationMixer | undefined;

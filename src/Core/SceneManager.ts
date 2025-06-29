@@ -180,6 +180,28 @@ export class SceneManager {
     notifySelectionChanged() {
         this.emitSelection();
     }
+
+    /**
+     * Deletes the given object from the scene, if present.
+     * If the object is currently selected, clears the selection.
+     * @param selectedObject The object to delete
+     */
+    deleteObject(selectedObject: THREE.Object3D) {
+        if (!this._scene || !selectedObject) return;
+        // Remove from scene graph
+        if (selectedObject.parent) {
+            selectedObject.parent.remove(selectedObject);
+        } else {
+            // If it's a root GameObject in GameScene
+            this._scene.removeGameObject?.(selectedObject as GameObject);
+        }
+        // Clear selection if deleted object was selected
+        if (this._selected === selectedObject) {
+            this.setSelected(null);
+        } else {
+            this.emitScene();
+        }
+    }
 }
 
 export default SceneManager;
