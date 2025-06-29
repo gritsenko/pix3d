@@ -4,35 +4,43 @@ import type { FileEntry, FileSystemEntry } from '../types';
 import SceneManager from '../Core/SceneManager';
 import * as THREE from 'three';
 
+
 interface FileDetailsPanelProps {
   file: FileSystemEntry;
   onSelectObject?: (obj: THREE.Object3D | null) => void;
 }
 
+
 export const FileDetailsPanel: React.FC<FileDetailsPanelProps> = ({ file, onSelectObject }) => {
   const isGlb = !file.isDirectory && (file as FileEntry).name.toLowerCase().endsWith('.glb');
-  
+  const isJson = !file.isDirectory && (file as FileEntry).name.toLowerCase().endsWith('.json');
+
   const handleAddToScene = async () => {
     if (!isGlb) return;
-    
     try {
       const fileEntry = file as FileEntry;
       const url = URL.createObjectURL(fileEntry.file);
-      
-      // Use the original filename as key for consistency
       const key = fileEntry.name;
       await SceneManager.instance.AddModelToScene(key, url);
-      
-      // Get the selected object through SceneManager
       const selectedObject = SceneManager.instance.selected;
       if (onSelectObject) {
         onSelectObject(selectedObject);
       }
-      
-      // Clean up the blob URL
       setTimeout(() => URL.revokeObjectURL(url), 10000);
     } catch (error) {
       console.error('Failed to add model to scene:', error);
+    }
+  };
+
+  const handleLoadScene = async () => {
+    if (!isJson) return;
+    try {
+      const fileEntry = file as FileEntry;
+      const text = await fileEntry.file.text();
+      const json = JSON.parse(text);
+      await SceneManager.instance.loadSceneFromJson(json);
+    } catch (error) {
+      console.error('Failed to load scene from JSON:', error);
     }
   };
 
@@ -47,6 +55,11 @@ export const FileDetailsPanel: React.FC<FileDetailsPanelProps> = ({ file, onSele
       {isGlb && (
         <Button type="primary" onClick={handleAddToScene} style={{ marginTop: 16 }}>
           Add to scene
+        </Button>
+      )}
+      {isJson && (
+        <Button type="primary" onClick={handleLoadScene} style={{ marginTop: 16, marginLeft: 8 }}>
+          LoadScene
         </Button>
       )}
     </div>

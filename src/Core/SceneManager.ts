@@ -202,6 +202,22 @@ export class SceneManager {
             this.emitScene();
         }
     }
+
+    /**
+     * Loads a scene from a JSON definition, replacing the current scene.
+     * @param levelJson The JSON scene definition
+     */
+    async loadSceneFromJson(levelJson: any) {
+        // Clear current scene
+        this.clearScene();
+        // Use SceneLoader to create a new GameScene from JSON
+        const newScene = this.sceneLoader.loadSceneFromJson(levelJson);
+        // Set and initialize the new scene
+        if (newScene && typeof newScene.init === 'function') {
+            newScene.init();
+        }
+        this.setScene(newScene);
+    }
 }
 
 export default SceneManager;
