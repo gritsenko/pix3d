@@ -17,7 +17,7 @@ function buildTreeData(node: THREE.Object3D, showAll: boolean, isRoot = false): 
   // Always show root node
   if (isRoot) {
     return {
-      title: node.name || node.type,
+      title: formatTitle(node),
       key: node.uuid,
       children: node.children
         .map(child => buildTreeData(child, showAll, false))
@@ -36,12 +36,23 @@ function buildTreeData(node: THREE.Object3D, showAll: boolean, isRoot = false): 
     return null;
   }
   return {
-    title: node.name || node.type,
+    title: formatTitle(node),
     key: node.uuid,
     children: node.children
       .map(child => buildTreeData(child, showAll, false))
       .filter(Boolean) as DataNode[],
   };
+// Helper to format the title with object type in brackets
+function formatTitle(node: THREE.Object3D): string {
+  const name = node.name || node.type;
+  // Use the class name for custom types, otherwise fallback to node.type
+  let typeName = node.constructor && node.constructor.name ? node.constructor.name : node.type;
+  // Avoid duplicate type if name is already the type
+  if (name === typeName) {
+    return name;
+  }
+  return `${name} [${typeName}]`;
+}
 }
 
 
@@ -66,6 +77,7 @@ export const SceneTree: React.FC<SceneTreeProps> = ({ root, selected, onSelect }
 
   // Recompute treeData when root, version, or showAll changes
   const treeData = useMemo(() => {
+    console.log('Rebuilding scene tree data', root.name, root.uuid, 'showAll:', showAll);
     const data = buildTreeData(root, showAll, true);
     return data ? [data] : [];
   }, [root, version, showAll]);
@@ -107,7 +119,7 @@ export const SceneTree: React.FC<SceneTreeProps> = ({ root, selected, onSelect }
   };
 
   return (
-    <div style={{ position: 'relative', background: '#181818', borderRadius: 6, padding: 8, paddingTop: 32 }}>
+    <div style={{ position: 'relative', background: '#181818', borderRadius: 6, padding: 8, paddingTop: 32, width: '100%' }}>
       {/* Save button */}
       <div style={{ position: 'absolute', top: 6, left: 8, zIndex: 2 }}>
         <button
@@ -141,7 +153,7 @@ export const SceneTree: React.FC<SceneTreeProps> = ({ root, selected, onSelect }
         onSelect={handleSelect}
         defaultExpandAll
         showLine
-        style={{ height: '100%' }}
+        style={{ height: '100%', width: '100%' }}
       />
     </div>
   );

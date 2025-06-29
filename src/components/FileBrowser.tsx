@@ -6,8 +6,6 @@ import { FileDetailsPanel } from './FileDetailsPanel';
 import styles from './FileBrowser.module.css';
 import type { FileSystemEntry, DirectoryEntry, FileEntry, FileBrowserProps } from '../types';
 
-
-
 interface TreeNode {
   title: string;
   key: string;
@@ -26,7 +24,6 @@ export function FileBrowser({ currentPath = '', currentDirectory, onPathChange }
   const [treeData, setTreeData] = useState<TreeNode[]>([]);
   const [expandedKeys, setExpandedKeys] = useState<string[]>(['']);
   const [selectedKeys, setSelectedKeys] = useState<string[]>(['']);
-  const { Text } = Typography;
 
   // Recursively build the folder tree from the directory handle
   const buildTree = useCallback(async (dirHandle: FileSystemDirectoryHandle, path = ''): Promise<TreeNode> => {

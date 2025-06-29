@@ -1,8 +1,7 @@
 import React from 'react';
 import { Button, Typography } from 'antd';
 import type { FileEntry, FileSystemEntry } from '../types';
-import { useEngineService } from '../contexts/ServiceProvider';
-import { useSceneManager } from '../hooks/useSceneManager';
+import SceneManager from '../Core/SceneManager';
 import * as THREE from 'three';
 
 interface FileDetailsPanelProps {
@@ -11,9 +10,6 @@ interface FileDetailsPanelProps {
 }
 
 export const FileDetailsPanel: React.FC<FileDetailsPanelProps> = ({ file, onSelectObject }) => {
-  const engineService = useEngineService();
-  const { addModelToScene } = useSceneManager(engineService);
-  
   const isGlb = !file.isDirectory && (file as FileEntry).name.toLowerCase().endsWith('.glb');
   
   const handleAddToScene = async () => {
@@ -25,10 +21,10 @@ export const FileDetailsPanel: React.FC<FileDetailsPanelProps> = ({ file, onSele
       
       // Use the original filename as key for consistency
       const key = fileEntry.name;
-      await addModelToScene(key, url);
+      await SceneManager.instance.AddModelToScene(key, url);
       
-      // Get the selected object through the service
-      const selectedObject = engineService.getSelectedObject();
+      // Get the selected object through SceneManager
+      const selectedObject = SceneManager.instance.selected;
       if (onSelectObject) {
         onSelectObject(selectedObject);
       }

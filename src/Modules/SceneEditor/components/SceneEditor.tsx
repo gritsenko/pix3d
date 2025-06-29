@@ -1,4 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { Layout } from 'antd';
+import ResizableDivider from './ResizableDivider';
 import * as THREE from 'three';
 import { TransformToolbar } from './TransformToolbar';
 import { SceneTree } from './SceneTree';
@@ -91,9 +93,24 @@ const SceneEditor: React.FC = () => {
         SceneManager.instance.setSelected(obj);
     }
 
+    // State for resizable columns
+    const [leftWidth, setLeftWidth] = useState(240);
+    const [rightWidth, setRightWidth] = useState(320);
+    const minLeft = 120, maxLeft = 400, minRight = 180, maxRight = 480;
+
+    const handleLeftResize = (dx: number) => {
+        setLeftWidth(w => Math.max(minLeft, Math.min(maxLeft, w + dx)));
+    };
+    const handleRightResize = (dx: number) => {
+        setRightWidth(w => Math.max(minRight, Math.min(maxRight, w - dx)));
+    };
+
     return (
-        <div className={styles.sceneEditorContainer}>
-            <div className={styles.sceneHierarchy}>
+        <Layout className={styles.sceneEditorContainer} style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'row', minWidth: 0 }}>
+            <div
+                className={styles.sceneHierarchy}
+                style={{ overflow: 'auto', minWidth: minLeft, maxWidth: maxLeft, width: leftWidth, borderRight: '1px solid #222', flexShrink: 0 }}
+            >
                 {sceneReady && scene && (
                     <SceneTree
                         root={scene}
@@ -102,13 +119,20 @@ const SceneEditor: React.FC = () => {
                     />
                 )}
             </div>
-            <div className={styles.viewport} ref={mountRef}>
-                <TransformToolbar mode={transformMode} onModeChange={setTransformMode} />
+            <ResizableDivider onDrag={handleLeftResize} />
+            <div style={{ flex: 1, minWidth: 0, background: 'none', display: 'flex', flexDirection: 'row', position: 'relative' }}>
+                <div className={styles.viewport} ref={mountRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
+                    <TransformToolbar mode={transformMode} onModeChange={setTransformMode} />
+                </div>
             </div>
-            <div className={styles.objectInspector}>
+            <ResizableDivider onDrag={handleRightResize} />
+            <div
+                className={styles.objectInspector}
+                style={{ overflow: 'auto', minWidth: minRight, maxWidth: maxRight, width: rightWidth, borderLeft: '1px solid #222', flexShrink: 0 }}
+            >
                 <ObjectInspector object={selectedObject} editModeRef={editModeRef} />
             </div>
-        </div>
+        </Layout>
     );
 };
 

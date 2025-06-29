@@ -66,7 +66,25 @@ export class SceneManager {
      */
     setScene(scene: GameScene) {
         this._scene = scene;
+        // Try to preserve selection by UUID if possible
+        if (this._selected && this._selected.uuid) {
+            const prevUUID = this._selected.uuid;
+            // Recursively search for object with same UUID in new scene
+            const findByUUID = (node: THREE.Object3D, uuid: string): THREE.Object3D | null => {
+                if (node.uuid === uuid) return node;
+                for (const child of node.children) {
+                    const found = findByUUID(child, uuid);
+                    if (found) return found;
+                }
+                return null;
+            };
+            const newSelected = findByUUID(scene, prevUUID);
+            this._selected = newSelected || null;
+        } else {
+            this._selected = null;
+        }
         this.emitScene();
+        this.emitSelection();
     }
 
     /**
@@ -74,11 +92,20 @@ export class SceneManager {
      */
     clearScene() {
         this._scene = null;
+        this._selected = null;
         this.emitScene();
+        this.emitSelection();
     }
 
     setSelected(obj: THREE.Object3D | null) {
         this._selected = obj;
+        if (obj) {
+            // eslint-disable-next-line no-console
+            console.log('[SceneManager] Selected object:', obj);
+        } else {
+            // eslint-disable-next-line no-console
+            console.log('[SceneManager] Selection cleared');
+        }
         this.emitSelection();
     }
 
@@ -104,9 +131,8 @@ export class SceneManager {
     }
 
     private emitScene() {
-        // Emit a shallow clone to ensure React state updates
-        const sceneToEmit = this._scene ? Object.assign(Object.create(Object.getPrototypeOf(this._scene)), this._scene) : null;
-        for (const l of this.sceneListeners) l(sceneToEmit);
+        // Emit the live scene object instead of a shallow clone
+        for (const l of this.sceneListeners) l(this._scene);
     }
     private emitSelection() {
         for (const l of this.selectionListeners) l(this._selected);
