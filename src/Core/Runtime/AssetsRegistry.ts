@@ -87,6 +87,18 @@ class AssetRegistry {
     public getRegistry(): AssetCategories {
         return this.assets;
     }
+
+    /**
+     * Debug helper to log all registered assets
+     */
+    public logRegisteredAssets(): void {
+        console.group('Asset Registry Contents:');
+        Object.keys(this.assets).forEach(category => {
+            const items = Object.keys(this.assets[category]);
+            console.log(`${category}: [${items.join(', ')}]`);
+        });
+        console.groupEnd();
+    }
 }
 
 // Экспортируем единственный экземпляр реестра ассетов

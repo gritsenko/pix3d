@@ -23,6 +23,7 @@ const Viewport: React.FC<ViewportProps> = ({ transformMode, setTransformMode, ed
   const currentCameraRef = useRef<'edit' | string>('edit');
   const [sceneCameras, setSceneCameras] = useState<CameraObject[]>([]);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const [scene, setScene] = useState(SceneManager.instance.scene); // Track the current scene
 
   // Function to find all cameras in the scene
   const findCamerasInScene = (scene: GameScene): CameraObject[] => {
@@ -65,8 +66,16 @@ const Viewport: React.FC<ViewportProps> = ({ transformMode, setTransformMode, ed
     }
   };
 
+  // Subscribe to scene changes and update local scene state
   useEffect(() => {
-    if (!mountRef.current) return;
+    const unsub = SceneManager.instance.subscribeScene((newScene) => {
+      setScene(newScene);
+    });
+    return () => { unsub(); };
+  }, []);
+
+  useEffect(() => {
+    if (!mountRef.current || !scene) return;
     const currentMount = mountRef.current;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -75,14 +84,7 @@ const Viewport: React.FC<ViewportProps> = ({ transformMode, setTransformMode, ed
     renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
     currentMount.appendChild(renderer.domElement);
 
-
-    let scene = SceneManager.instance.scene;
-    if (!scene) {
-      scene = SceneManager.instance.createDefaultScene();
-      if (onSceneChange) onSceneChange(scene);
-    } else {
-      if (onSceneChange) onSceneChange(scene);
-    }
+    if (onSceneChange) onSceneChange(scene);
 
     const editMode = new EditMode(renderer, scene);
     editModeRef.current = editMode;
@@ -103,7 +105,6 @@ const Viewport: React.FC<ViewportProps> = ({ transformMode, setTransformMode, ed
       const height = currentMount.clientHeight;
       renderer.setSize(width, height);
       editMode.handleResize(width, height);
-      
       // Update current camera aspect ratio
       if (currentCameraRef.current === 'edit') {
         editMode.camera.aspect = width / height;
@@ -128,7 +129,6 @@ const Viewport: React.FC<ViewportProps> = ({ transformMode, setTransformMode, ed
       const dt = clock.getDelta();
       editMode.update();
       scene.onTick(dt);
-      
       // Render with current camera - get fresh camera reference each frame
       let renderCamera: THREE.PerspectiveCamera;
       if (currentCameraRef.current === 'edit') {
@@ -139,7 +139,6 @@ const Viewport: React.FC<ViewportProps> = ({ transformMode, setTransformMode, ed
         const cameraObj = currentCameras.find(cam => cam.uuid === currentCameraRef.current);
         renderCamera = cameraObj?.camera || editMode.camera;
       }
-      
       renderer.render(scene, renderCamera);
     };
 
@@ -154,7 +153,8 @@ const Viewport: React.FC<ViewportProps> = ({ transformMode, setTransformMode, ed
       renderer.dispose();
       rendererRef.current = null;
     };
-  }, [editModeRef, setSceneReady]);
+    // Re-run this effect when the scene changes
+  }, [editModeRef, setSceneReady, scene]);
 
   useEffect(() => {
     editModeRef.current?.setTransformMode(transformMode);

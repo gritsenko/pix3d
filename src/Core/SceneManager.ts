@@ -17,6 +17,12 @@ export class SceneManager {
     private selectionListeners: SelectionListener[] = [];
     private assetLoader = new AssetLoader();
     private sceneLoader = new SceneLoader(this.assetLoader);
+    /**
+     * Loads all assets using the internal AssetLoader instance.
+     */
+    public async loadAllAssets() {
+        await this.assetLoader.loadAssets();
+    }
     private transformListeners: (() => void)[] = [];
 
     private constructor() {}
@@ -166,10 +172,12 @@ export class SceneManager {
         };
         // Use SceneLoader to create a GameObject
         const gameObject = this.sceneLoader.loadGameObject(item);
-        if (this._scene) {
+        if (gameObject && this._scene) {
             this._scene.addGameObject(gameObject);
             this.emitScene();
             this.setSelected(gameObject); // Select the newly added object
+        } else if (!gameObject) {
+            console.error(`Failed to create GameObject for model ${key}`);
         }
     }
 
@@ -210,8 +218,10 @@ export class SceneManager {
     async loadSceneFromJson(levelJson: any) {
         // Clear current scene
         this.clearScene();
+
+        await this.assetLoader.loadAssets();
         // Use SceneLoader to create a new GameScene from JSON
-        const newScene = this.sceneLoader.loadSceneFromJson(levelJson);
+        const newScene = await this.sceneLoader.loadSceneFromJson(levelJson);
         // Set and initialize the new scene
         if (newScene && typeof newScene.init === 'function') {
             newScene.init();

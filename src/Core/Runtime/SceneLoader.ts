@@ -7,6 +7,7 @@ import { MoveByCheckpoints } from '../Behaviors/MoveByCheckppoints';
 import { Destructable } from '../Behaviors/Destructable';
 import { GameObjectCollider } from '../ObjectTypes/GameObjectCollider';
 import { MeleeAttacker } from '../Behaviors/MeleeAttacker';
+import { assetRegistry } from './AssetsRegistry';
 
 export default class SceneLoader {
     assetLoader: AssetLoader;
@@ -15,7 +16,7 @@ export default class SceneLoader {
         this.assetLoader = assetLoader;
     }
 
-    loadSceneFromJson(levelJson: any) {
+    async loadSceneFromJson(levelJson: any) {
 
         const scene = new GameScene();
         const gameObjects: GameObject[] = [];
@@ -36,11 +37,70 @@ export default class SceneLoader {
             [key: string]: any;
         }
 
+        // First, collect all unique model names and ensure they are loaded
+        const modelNames = new Set<string>();
         (levelJson as LevelItem[]).forEach((item: LevelItem) => {
+            if (item.modelName && item.modelName.endsWith('glb')) {
+                modelNames.add(item.modelName);
+            }
+        });
 
-            if (item.modelName.endsWith('glb')) {
-            const gameObject = this.loadGameObject(item);
-            gameObjects.push(gameObject);
+        console.log('Models required by scene:', Array.from(modelNames));
+        
+        // Log current asset registry for debugging
+        assetRegistry.logRegisteredAssets();
+
+        // Load all required models
+        for (const modelName of modelNames) {
+            try {
+                // Check if model is already loaded
+                if (this.assetLoader.gltfs.find(x => x.key === modelName)) {
+                    console.log(`Model ${modelName} is already loaded`);
+                    continue;
+                }
+                
+                // Check if model is registered in AssetRegistry
+                if (!assetRegistry.assets.models[modelName]) {
+                    console.error(`Model ${modelName} not found in asset registry.`);
+                    console.log('Available models in registry:', Object.keys(assetRegistry.assets.models));
+                    console.info(`To load this scene properly, please:
+1. Use the file browser to navigate to the model file: ${modelName}
+2. Click "Add to scene" on the model file to register it
+3. Then try loading the scene again`);
+                    continue;
+                }
+                
+                const modelUrl = assetRegistry.assets.models[modelName];
+                console.log(`Loading model ${modelName} from registry...`);
+                console.log(`Model URL: ${typeof modelUrl === 'string' ? modelUrl : 'Not a string'}`);
+                
+                // Now try to load it
+                await this.assetLoader.loadModel(modelName);
+                console.log(`Successfully loaded model ${modelName}`);
+            } catch (error) {
+                console.error(`Failed to load model ${modelName}:`, error);
+                console.warn(`Model ${modelName} is not available. Make sure the model file exists and is accessible.`);
+                // Continue with other models even if one fails
+            }
+        }
+
+        // Now create game objects
+        (levelJson as LevelItem[]).forEach((item: LevelItem) => {
+            if (item.modelName && item.modelName.endsWith('glb')) {
+                try {
+                    // Check if the model was successfully loaded
+                    if (this.assetLoader.gltfs.find(x => x.key === item.modelName)) {
+                        const gameObject = this.loadGameObject(item);
+                        if (gameObject) {
+                            gameObjects.push(gameObject);
+                        }
+                    } else {
+                        console.warn(`Skipping object ${item.name} because model ${item.modelName} is not loaded`);
+                    }
+                } catch (error) {
+                    console.error(`Failed to create game object ${item.name}:`, error);
+                    // Continue with other objects
+                }
             }
         });
 
@@ -48,7 +108,7 @@ export default class SceneLoader {
         return scene;
     }
 
-    loadGameObject(item: any): GameObject {
+    loadGameObject(item: any): GameObject | null {
 
         //console.log("loding item", item);
 
@@ -60,6 +120,11 @@ export default class SceneLoader {
         };
 
         const gameObject = this.assetLoader.loadGltfToGameObject(item.name, item.modelName, transform);
+        if (!gameObject) {
+            console.error(`Failed to create game object for ${item.name}`);
+            return null;
+        }
+        
         const behaviors: Behavior[] = [];
 
         item.behaviors?.forEach((behaviorItem: any) => {
@@ -106,4 +171,6 @@ export default class SceneLoader {
 
         gameObject.setCollider(cubeCollider);
     }
+
+
 }

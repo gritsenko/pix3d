@@ -20,7 +20,7 @@ export const FileDetailsPanel: React.FC<FileDetailsPanelProps> = ({ file, onSele
     try {
       const fileEntry = file as FileEntry;
       const url = URL.createObjectURL(fileEntry.file);
-      const key = fileEntry.name;
+      const key = fileEntry.path;
       await SceneManager.instance.AddModelToScene(key, url);
       const selectedObject = SceneManager.instance.selected;
       if (onSelectObject) {

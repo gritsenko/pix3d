@@ -43,11 +43,32 @@ export default class AssetLoader {
         }));
         this.gltfs = await this.loadResoucesAsync(modelEntries, t => this.loadGltfAsync(t));
 
+
         this.tutorial_screen = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
         this.tutorial_screen.needsUpdate = true;
 
-        this.levelJson = await fetch(assetRegistry.getRegistry().scenes.levelData).then((response) => response.json());
-        this.uiLayerJson = await fetch(assetRegistry.getRegistry().scenes.uiLayerData).then((response) => response.json());
+        // Load scene JSONs only if present, with error handling
+        const scenes = assetRegistry.getRegistry().scenes;
+        if (scenes.levelData) {
+            try {
+                this.levelJson = await fetch(scenes.levelData as string).then((response) => response.json());
+            } catch (e) {
+                console.warn('Failed to load levelData JSON:', e);
+                this.levelJson = null;
+            }
+        } else {
+            this.levelJson = null;
+        }
+        if (scenes.uiLayerData) {
+            try {
+                this.uiLayerJson = await fetch(scenes.uiLayerData as string).then((response) => response.json());
+            } catch (e) {
+                console.warn('Failed to load uiLayerData JSON:', e);
+                this.uiLayerJson = null;
+            }
+        } else {
+            this.uiLayerJson = null;
+        }
 
         const soundEntries = Object.keys(assetRegistry.getRegistry().sounds).map((soundName) => ({
             key: soundName, url: assetRegistry.getRegistry().sounds[soundName] as string,
@@ -74,8 +95,13 @@ export default class AssetLoader {
     }
 
     getGltfByName(name: string) {
-        const gltf = this.gltfs.find(x => x.key === name)?.gltf as GLTF;
-        return gltf;
+        const gltfEntry = this.gltfs.find(x => x.key === name);
+        if (!gltfEntry) {
+            console.error(`GLTF model not loaded: ${name}`);
+            console.log('Available models:', this.gltfs.map(x => x.key));
+            return null;
+        }
+        return gltfEntry.gltf as GLTF;
     }
 
     getTextureByName(name: string): THREE.Texture {
@@ -109,11 +135,27 @@ export default class AssetLoader {
     }
 
     async loadGltfAsync(entry: ResourceEntry): Promise<{ key: string, gltf: GLTF }> {    
+        // Handle blob URLs from File System Access API
+        if (entry.url.startsWith('blob:')) {
+            return this.loadGltfFromBlobUrl(entry);
+        }
+        
         // Original file processing (in debug mode)
         if (entry.url.startsWith('/')) {
             return this.loadGltfFromRegualarUrl(entry);
         }
-        return this.loadBase64Gltf(entry);
+        
+        // Base64 data URLs
+        if (entry.url.startsWith('data:')) {
+            return this.loadBase64Gltf(entry);
+        }
+        
+        // For relative paths, try to treat as regular URLs
+        if (entry.url.includes('.')) {
+            return this.loadGltfFromRegualarUrl(entry);
+        }
+        
+        throw new Error(`Unsupported URL format for model ${entry.key}: ${entry.url}`);
     }
 
     async loadGltfFromRegualarUrl(entry: ResourceEntry) {
@@ -163,9 +205,33 @@ export default class AssetLoader {
             return this.loadZippedGltf(entry);
         }
 
+        // Validate that the URL is actually a base64 data URL
+        if (!entry.url.startsWith("data:model/gltf-binary;base64,")) {
+            throw new Error(`Invalid data URL format for model ${entry.key}. Expected base64 GLB data, got: ${entry.url.substring(0, 50)}...`);
+        }
+
         const startIndex = "data:model/gltf-binary;base64,".length;
         const modelStr = entry.url.substring(startIndex);
-        const mm = decode(modelStr);
+        
+        // Validate base64 string
+        if (!modelStr || modelStr.length < 10) {
+            throw new Error(`Invalid or too short base64 data for model ${entry.key}. Length: ${modelStr.length}`);
+        }
+
+        console.log(`Decoding base64 GLB for ${entry.key}, data length: ${modelStr.length}`);
+        
+        let mm: ArrayBuffer;
+        try {
+            mm = decode(modelStr);
+            console.log(`Decoded ArrayBuffer size: ${mm.byteLength} bytes`);
+            
+            if (mm.byteLength < 20) {
+                throw new Error(`Decoded GLB data too small: ${mm.byteLength} bytes`);
+            }
+        } catch (error) {
+            console.error(`Failed to decode base64 for model ${entry.key}:`, error);
+            throw new Error(`Base64 decode failed for model ${entry.key}: ${error instanceof Error ? error.message : String(error)}`);
+        }
         
         return new Promise((resolve, reject) => {
             this.gltfLoader.parse(
@@ -188,10 +254,11 @@ export default class AssetLoader {
         return this.extractAndParseZip(zipData, entry);
     }
 
-    loadGltfToGameObject(name: string, modelName: string, transform: Transform): GameObject {
+    loadGltfToGameObject(name: string, modelName: string, transform: Transform): GameObject | null {
         const gltf = this.getGltfByName(modelName);
         if (!gltf) {
-            throw new Error(`GLTF model not loaded: ${modelName}`);
+            console.error(`Cannot create GameObject: GLTF model not loaded: ${modelName}`);
+            return null;
         }
         const instance = SkeletonUtils.clone(gltf.scene);
         const animations = gltf.animations as THREE.AnimationClip[];
